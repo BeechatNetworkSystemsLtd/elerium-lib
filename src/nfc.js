@@ -196,77 +196,77 @@ async function readMessage(timeout) {
 
 /*****************************************************************************/
 
-class EleriumNfc {
-  constructor() {}
 
-  /**
-   *
-   * @param secret Passcode in byte-array (ex: [0x11, 0x11])
-   *
-   * @return wallet info
-   */
-  async createWallet(secret) {
-    console.log("elerium:", "create wallet");
+/**
+ *
+ * @param secret Passcode in byte-array (ex: [0x11, 0x11])
+ *
+ * @return wallet info
+ */
+async function createWallet(secret) {
+  console.log("elerium:", "create wallet");
 
-    return await performTransaction(async () => {
-      const request = [0xa0, 0x00, 0x00, 0x00].concat(secret || []);
+  return await performTransaction(async () => {
+    const request = [0xa0, 0x00, 0x00, 0x00].concat(secret || []);
 
-      await writeMessage(request);
+    await writeMessage(request);
 
-      const message = await readMessage();
+    const message = await readMessage();
 
-      console.log(bytesToHex(message));
+    console.log(bytesToHex(message));
 
-      return message.slice(4);
-    });
-  }
+    return message.slice(4);
+  });
+}
 
-  /**
-   * @param id Wallet Id
-   * @param secret Passcode in byte-array (ex: [0x11, 0x11])
-   * @param hash Hash to be signed
-   *
-   * @return signature as byte-array
-   */
-  async singTransaction(id, secret, hash) {
-    return await performTransaction(async () => {
-      const request = [0xa1, 0x00, 0x00, 0x00].concat(hash);
+/**
+ * @param id Wallet Id
+ * @param secret Passcode in byte-array (ex: [0x11, 0x11])
+ * @param hash Hash to be signed
+ *
+ * @return signature as byte-array
+ */
+async function singTransaction(id, secret, hash) {
+  return await performTransaction(async () => {
+    const request = [0xa1, 0x00, 0x00, 0x00].concat(hash);
 
-      await writeMessage(request);
+    await writeMessage(request);
 
-      const message = await readMessage();
+    const message = await readMessage();
 
-      console.log(bytesToHex(message));
+    console.log(bytesToHex(message));
 
-      return message.slice(4);
-    });
-  }
+    return message.slice(4);
+  });
+}
 
-  /**
-   */
-  async wallets() {}
+/**
+ */
+async function wallets() { }
 
-  async destroyWallet(id) {}
+async function destroyWallet(id) { }
 
-  async writeMessage(message) {
-    return await writeMessage(message);
-  }
+async function writeMessage(message) {
+  return await writeMessage(message);
+}
 
-  async readMessage() {
-    return await readMessage();
-  }
+async function readMessage() {
+  return await readMessage();
+}
 
-  async execute(transaction) {
-    return await performTransaction(async () => {
-      return await transaction(writeMessage, readMessage);
-    });
-  }
+async function execute(transaction) {
+  return await performTransaction(async () => {
+    return await transaction(writeMessage, readMessage);
+  });
+}
 
-  async testCommand() {
-    return await this.createWallet();
-  }
+async function testCommand() {
+  return await this.createWallet();
 }
 
 /*****************************************************************************/
 
-export { EleriumNfc };
+export {
+  createWallet,
+  singTransaction
+}

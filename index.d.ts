@@ -1,5 +1,2 @@
-export function dqxPerformNFC(
-  nfcAction: any,
-  setWorkStatusMessage: any,
-  options: any
-): Promise<void>;
+export function createWallet(secret: number[]): Promise<number[]>;
+export function singTransaction(id: any, secret: any, secret: number[]): Promise<number[]>;

@@ -1,6 +1,6 @@
-
-import { EleriumNfc } from './src/nfc.js';
+import { createWallet, singTransaction } from './src/nfc.js';
 
 module.exports = {
-   EleriumNfc
+   createWallet, 
+   singTransaction
 };
