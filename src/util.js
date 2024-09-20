@@ -1,9 +1,3 @@
-class TagError extends Error {
-    constructor(message) {
-        super(message);
-        this.name = "TagError";
-    }
-}
 
 function hexToBytes(hex) {
   let bytes, c;
@@ -24,4 +18,30 @@ function bytesToHex(bytes) {
   return hex.join('');
 }
 
-export {TagError, hexToBytes, bytesToHex};
+class Timeout {
+
+    constructor() {
+        this.startTime = Timeout.currentTime();
+    }
+
+    elapsed(interval) {
+        return (Timeout.currentTime() - this.startTime) >= interval;
+    }
+
+    reset() {
+        this.startTime = Timeout.currentTime();
+    }
+
+    static sleep(interval) {
+        return new Promise(resolve => {
+            setTimeout(resolve, interval);
+        });
+    }
+
+    static currentTime() {
+        return new Date().getTime();
+    }
+};
+
+export {Timeout, hexToBytes, bytesToHex};
+

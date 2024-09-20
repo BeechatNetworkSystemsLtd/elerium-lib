@@ -1,5 +1,6 @@
-import { dqxPerformNFC } from './src/rn.js';
+
+import { EleriumNfc } from './src/nfc.js';
 
 module.exports = {
-    dqxPerformNFC
+   EleriumNfc
 };
