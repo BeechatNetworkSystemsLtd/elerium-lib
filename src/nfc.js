@@ -7,14 +7,18 @@ import NfcManager, {
 
 import CRC32 from "crc-32";
 
-import { Timeout, bytesToHex } from "./util.js";
+import { Timeout, bytesToHex, hexToBytes } from "./util.js";
 import { Buffer } from "buffer";
+
+/*****************************************************************************/
 
 const SRAM_SIZE = 256;
 const BLOCK_SIZE = 4;
 const HEADER_SIZE = 4 + 4;
 const MAX_MESSAGE_SIZE = SRAM_SIZE - HEADER_SIZE;
 const MAGIC_PATTERN = [0xe1, 0xed];
+
+/*****************************************************************************/
 
 async function transceive(code, data) {
   const flags = Nfc15693RequestFlagIOS.HighDataRate;
@@ -37,6 +41,8 @@ async function transceive(code, data) {
       throw Error("Invalid platform OS.");
   }
 
+  // console.log("trx", "out", data, "in", result);
+
   return result;
 }
 
@@ -55,8 +61,10 @@ async function performTransaction(transaction) {
 
     await waitForConfig(0x00a1, 0x00000f00, 0x00000b00, 3000);
 
-    await waitUnlock(1000);
+    console.log("elerium:", "wait for unlock");
+    await waitUnlock(12000);
 
+    console.log("elerium:", "execute transaction");
     result = await transaction();
   } catch (e) {
     console.warn("elerium:", e, JSON.stringify(e));
@@ -68,7 +76,8 @@ async function performTransaction(transaction) {
   return result;
 }
 
-// arbiter mode = pass through, SRAM is accessible, transfer dir = nfc
+/*****************************************************************************/
+
 async function waitForConfig(address, mask, value, interval) {
   const timeout = new Timeout();
 
@@ -85,15 +94,7 @@ async function waitForConfig(address, mask, value, interval) {
         (result[2] << 16) |
         (result[3] << 24);
 
-      console.log(
-        "config",
-        config.toString(16),
-        mask.toString(16),
-        value.toString(16),
-      );
-
       if ((config & mask) === value) {
-        console.log("elerium: config ready");
         return;
       }
     } catch (e) {
@@ -109,6 +110,8 @@ async function waitForConfig(address, mask, value, interval) {
 async function waitUnlock(interval) {
   return await waitForConfig(0x00a0, 0x00000300, 0x00000100, interval);
 }
+
+/*****************************************************************************/
 
 async function writeMessage(message) {
   if (!message) {
@@ -132,7 +135,6 @@ async function writeMessage(message) {
   })();
 
   // uint32 - 4 bytes
-  console.log("AAAA");
   const crcBuffer = Buffer.alloc(4);
   crcBuffer.writeInt32LE(crc, 0);
 
@@ -146,14 +148,13 @@ async function writeMessage(message) {
 
   // Control to NFC Tag
   await transceive(0xd3, [0x3f, 0x00, 0xff, 0xff, 0xff, 0xff]);
-
-  // await waitUnlock(3000);
 }
 
-async function readMessage() {
-  const response = await transceive(0xd2, [0x00, 0x01]);
+async function readMessage(timeout) {
+  await waitUnlock(timeout || 10000);
 
-  const responseBuffer = Buffer.from(res);
+  const response = await transceive(0xd2, [0x00, 0x01]);
+  const responseBuffer = Buffer.from(response);
 
   for (let i in MAGIC_PATTERN) {
     if (response[i] != MAGIC_PATTERN[i]) {
@@ -177,7 +178,7 @@ async function readMessage() {
         pages++;
       }
 
-      return await transceive(0xd2, [0x02, pages]).slice(0, length);
+      return (await transceive(0xd2, [0x02, pages])).slice(0, length);
     } else {
       return [];
     }
@@ -192,6 +193,8 @@ async function readMessage() {
 
   return message;
 }
+
+/*****************************************************************************/
 
 class EleriumNfc {
   constructor() {}
@@ -227,12 +230,21 @@ class EleriumNfc {
     return await readMessage();
   }
 
+  async execute(transaction) {
+    return await performTransaction(async () => {
+      return await transaction(writeMessage, readMessage);
+    });
+  }
+
   async testCommand() {
     return await performTransaction(async () => {
-      await writeMessage([0xaa, 0xbb, 0xcc]);
-      return await readMessage();
+      await writeMessage(hexToBytes("AABBCCDD1122334455667788"));
+      let message = await readMessage();
+      console.log(bytesToHex(message));
     });
   }
 }
+
+/*****************************************************************************/
 
 export { EleriumNfc };
