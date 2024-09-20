@@ -240,30 +240,6 @@ async function singTransaction(id, secret, hash) {
   });
 }
 
-/**
- */
-async function wallets() { }
-
-async function destroyWallet(id) { }
-
-async function writeMessage(message) {
-  return await writeMessage(message);
-}
-
-async function readMessage() {
-  return await readMessage();
-}
-
-async function execute(transaction) {
-  return await performTransaction(async () => {
-    return await transaction(writeMessage, readMessage);
-  });
-}
-
-async function testCommand() {
-  return await this.createWallet();
-}
-
 /*****************************************************************************/
 
 export {
