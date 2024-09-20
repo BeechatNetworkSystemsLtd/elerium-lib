@@ -201,11 +201,27 @@ async function readMessage(timeout) {
     throw Error("CRC mismatch");
   }
 
-  return message;
+  if (status & (0x01 << 1)) {
+    throw Error("elerium message request failed");
+  }
+
+  if (status & (0x01 << 0)) {
+    return message;
+  }
+
+  throw Error("elerium message request wasn't handled");
 }
 
 /*****************************************************************************/
 
+/**
+ * @brief Program Elerium NFC with new password and URL
+ *
+ * @param password User password (should be 8 symbols in length)
+ * @param url Pre-URL
+ *
+ * @return Public Key in bytes [0x00, 0x00, .., 0x00] (64 len)
+ */
 async function urlSignProgram(password, url) {
   if (password.length != 8) {
     throw Error("password should be exact 8 symbols");
@@ -232,6 +248,11 @@ async function urlSignProgram(password, url) {
   });
 }
 
+/**
+ * @brief Get Public-Key of Elerium NFC
+ *
+ * @return Public Key in bytes [0x00, 0x00, .., 0x00] (64 len)
+ */
 async function urlSignGetPublicKey() {
   return await performTransaction(async () => {
     const request = [0xb1, 0x00, 0x00, 0x00];
@@ -240,10 +261,15 @@ async function urlSignGetPublicKey() {
 
     const message = await readMessage();
 
-    return message.slice(4);
+    return message;
   });
 }
 
+/**
+ * @brief Reset Elerium NFC
+ *
+ * @param password User password (should be 8 symbols in length)
+ */
 async function urlSignReset(password) {
   if (password.length != 8) {
     throw Error("password should be exact 8 symbols");
