@@ -205,7 +205,21 @@ class EleriumNfc {
    *
    * @return wallet info
    */
-  async createWallet(secret) {}
+  async createWallet(secret) {
+    console.log("elerium:", "create wallet");
+
+    return await performTransaction(async () => {
+      const request = [0xa0, 0x00, 0x00, 0x00].concat(secret || []);
+
+      await writeMessage(request);
+
+      const message = await readMessage();
+
+      console.log(bytesToHex(message));
+
+      return message.slice(4);
+    });
+  }
 
   /**
    * @param id Wallet Id
@@ -214,7 +228,19 @@ class EleriumNfc {
    *
    * @return signature as byte-array
    */
-  async singTransaction(id, secret, hash) {}
+  async singTransaction(id, secret, hash) {
+    return await performTransaction(async () => {
+      const request = [0xa1, 0x00, 0x00, 0x00].concat(hash);
+
+      await writeMessage(request);
+
+      const message = await readMessage();
+
+      console.log(bytesToHex(message));
+
+      return message.slice(4);
+    });
+  }
 
   /**
    */
@@ -237,11 +263,7 @@ class EleriumNfc {
   }
 
   async testCommand() {
-    return await performTransaction(async () => {
-      await writeMessage(hexToBytes("AABBCCDD1122334455667788"));
-      let message = await readMessage();
-      console.log(bytesToHex(message));
-    });
+    return await this.createWallet();
   }
 }
 
