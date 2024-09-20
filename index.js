@@ -1,6 +1,5 @@
-import { createWallet, singTransaction } from './src/nfc.js';
+import { urlSignProgram, urlSignReset } from './src/nfc.js';
 
 module.exports = {
-   createWallet, 
-   singTransaction
+   urlSignProgram, urlSignReset, 
 };

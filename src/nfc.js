@@ -57,17 +57,27 @@ async function performTransaction(transaction) {
       alertMessage: "Please tap the tag and hold it.",
     });
 
-    console.log("elerium:", "wait for base config");
+    console.log("elerium:", "enable ed-pin for sram");
+    await transceive(0xc1, [0xa8, 0x04, 0x00, 0x00, 0x00]);
 
+    await Timeout.sleep(200);
+
+    console.log("elerium:", "wait for base config");
     await waitForConfig(0x00a1, 0x00000f00, 0x00000b00, 3000);
 
     console.log("elerium:", "wait for unlock");
-    await waitUnlock(12000);
+    await waitUnlock(30000);
 
     console.log("elerium:", "execute transaction");
     result = await transaction();
+
+    console.log("elerium:", "enable ed-pin for ndef");
+    await transceive(0xc1, [0xa8, 0x09, 0x00, 0x00, 0x00]);
+
+    await Timeout.sleep(100);
   } catch (e) {
-    console.warn("elerium:", e, JSON.stringify(e));
+    console.warn("elerium:", "error -", e, JSON.stringify(e));
+    throw e;
   } finally {
     console.log("elerium: stop nfc");
     await NfcManager.cancelTechnologyRequest();
@@ -151,7 +161,7 @@ async function writeMessage(message) {
 }
 
 async function readMessage(timeout) {
-  await waitUnlock(timeout || 10000);
+  await waitUnlock(timeout || 30000);
 
   const response = await transceive(0xd2, [0x00, 0x01]);
   const responseBuffer = Buffer.from(response);
@@ -196,53 +206,58 @@ async function readMessage(timeout) {
 
 /*****************************************************************************/
 
-
-/**
- *
- * @param secret Passcode in byte-array (ex: [0x11, 0x11])
- *
- * @return wallet info
- */
-async function createWallet(secret) {
-  console.log("elerium:", "create wallet");
+async function urlSignProgram(password, url) {
+  if (password.length != 8) {
+    throw Error("password should be exact 8 symbols");
+  }
 
   return await performTransaction(async () => {
-    const request = [0xa0, 0x00, 0x00, 0x00].concat(secret || []);
+    const request = [0xb0, 0x00, 0x00, 0x00]
+      .concat([...Buffer.from(password)])
+      .concat([...Buffer.from(url)]);
 
     await writeMessage(request);
 
     const message = await readMessage();
 
-    console.log(bytesToHex(message));
+    const public_key = message;
+    console.log(
+      "elerium: url-sign pub key",
+      "len(",
+      public_key.length,
+      ")",
+      Buffer.from(public_key).toString("hex"),
+    );
+    return public_key;
+  });
+}
+
+async function urlSignGetPublicKey() {
+  return await performTransaction(async () => {
+    const request = [0xb1, 0x00, 0x00, 0x00];
+
+    await writeMessage(request);
+
+    const message = await readMessage();
 
     return message.slice(4);
   });
 }
 
-/**
- * @param id Wallet Id
- * @param secret Passcode in byte-array (ex: [0x11, 0x11])
- * @param hash Hash to be signed
- *
- * @return signature as byte-array
- */
-async function singTransaction(id, secret, hash) {
+async function urlSignReset(password) {
+  if (password.length != 8) {
+    throw Error("password should be exact 8 symbols");
+  }
+
   return await performTransaction(async () => {
-    const request = [0xa1, 0x00, 0x00, 0x00].concat(hash);
+    const request = [0xb2, 0x00, 0x00, 0x00].concat([...Buffer.from(password)]);
 
     await writeMessage(request);
 
     const message = await readMessage();
-
-    console.log(bytesToHex(message));
-
-    return message.slice(4);
   });
 }
 
 /*****************************************************************************/
 
-export {
-  createWallet,
-  singTransaction
-}
+export { urlSignProgram, urlSignGetPublicKey, urlSignReset };
